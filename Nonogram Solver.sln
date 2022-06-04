@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nonogram Solver", "Nonogram Solver\Nonogram Solver.csproj", "{96A6D9D7-AB6B-4F05-8DD4-A20A59220F9B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NUnitTests", "NUnitTests\NUnitTests.csproj", "{4C0E8576-595E-413A-A214-3026BE56B7F6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{96A6D9D7-AB6B-4F05-8DD4-A20A59220F9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{96A6D9D7-AB6B-4F05-8DD4-A20A59220F9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{96A6D9D7-AB6B-4F05-8DD4-A20A59220F9B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4C0E8576-595E-413A-A214-3026BE56B7F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4C0E8576-595E-413A-A214-3026BE56B7F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4C0E8576-595E-413A-A214-3026BE56B7F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4C0E8576-595E-413A-A214-3026BE56B7F6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

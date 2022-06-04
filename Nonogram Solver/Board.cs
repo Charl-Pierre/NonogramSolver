@@ -94,7 +94,7 @@ namespace Nonogram_Solver
                             c = ConsoleColor.Gray;
                             break;
                         case Cell.Marked:
-                            c = ConsoleColor.Yellow;
+                            c = ConsoleColor.Cyan;
                             break;
                     }
                     Util.WriteAt(value != Cell.Empty? "  ": "", point.Add(1+i*2, 1+j), ConsoleColor.Black, c);
@@ -124,6 +124,12 @@ namespace Nonogram_Solver
             return descriptor;
         }
 
+        
+        /// <summary>
+        /// Deep-copy a specific row as a 1-dimensional sequence of cells
+        /// </summary>
+        /// <param name="rowIndex">The row to be copied</param>
+        /// <returns>An array of cells in the specified row</returns>
         public Cell[] GetRow(int rowIndex)
         {
             Cell[] row = new Cell[Width];
@@ -133,6 +139,11 @@ namespace Nonogram_Solver
             return row;
         }
         
+        /// <summary>
+        /// Deep-copy a specific column as a 1-dimensional sequence of cells
+        /// </summary>
+        /// <param name="columnIndex">The column to be copied</param>
+        /// <returns>An array of cells in the specified column</returns>
         public Cell[] GetColumn(int columnIndex)
         {
             Cell[] column = new Cell[Height];
@@ -141,6 +152,45 @@ namespace Nonogram_Solver
             
             return column;
         }
+
+        /// <summary>
+        /// Overwrite a given sequence of cells onto a row of the grid.
+        /// </summary>
+        /// <param name="sequence">The sequence of cells to be applied.</param>
+        /// <param name="rowIndex">The row which to overwrite</param>
+        /// /// <returns>The number of cells changed.</returns>
+        public int SetRow(Cell[] sequence, int rowIndex)
+        {
+            int cellsChanged = 0;
+            for (int i = 0; i < Width; i++)
+            {
+                if (sequence[i] != Cell.Empty)
+                {
+                    Grid[i, rowIndex] = sequence[i];
+                    cellsChanged++;
+                }
+            }
+            return cellsChanged;
+        }
         
+        /// <summary>
+        /// Overwrite a given sequence of cells onto a column of the grid.
+        /// </summary>
+        /// <param name="sequence">The sequence of cells to be applied.</param>
+        /// <param name="columnIndex">The column which to overwrite</param>
+        /// <returns>The number of cells changed.</returns>
+        public int SetColumn(Cell[] sequence, int columnIndex)
+        {
+            int cellsChanged = 0;
+            for (int i = 0; i < Height; i++)
+            {
+                if (sequence[i] != Cell.Empty)
+                {
+                    Grid[columnIndex, i] = sequence[i];
+                    cellsChanged++;
+                }
+            }
+            return cellsChanged;
+        }
     }
 }
