@@ -29,31 +29,31 @@ namespace NUnitTests
             
             //Verify that sequence is a reference and not value type.
             Cell[] seq3 = seq;
-            seq3[0] = Cell.Marked;
-            Assert.That(seq[0] == Cell.Marked);
+            seq3[0] = Cell.Cleared;
+            Assert.That(seq[0] == Cell.Cleared);
         }
 
         [Test]
         public void Test_ApplyBlock()
         {
-            Cell[] startSeq = new Cell[] { Cell.Empty, Cell.Empty, Cell.Empty };
+            Cell[] p = new Cell[] { Cell.Empty, Cell.Cleared, Cell.Cleared, Cell.Empty, Cell.Full, Cell.Empty  };
             int[] desc = new int[] { 2 };
-            var res = Solver.ApplyBlock(startSeq, 1, 2);
-            Assert.That($"{string.Join("", res.Select(s => { return s == Cell.Full ? "X" : "-";}))}" == "-XX");
+            var res = Solver.ApplyBlock(p, 1, desc[0]);
+            Assert.Fail(Solver.SequenceToString(res));
         }
 
         [Test]
         public void Test_Combinations()
         {
-            Cell[] p = new Cell[] { Cell.Empty, Cell.Empty, Cell.Empty, Cell.Empty,Cell.Empty,Cell.Empty,Cell.Empty,Cell.Empty,Cell.Empty };
-            int[] desc = new int[] { 2,2,1 };
+            Cell[] p = new Cell[] { Cell.Empty, Cell.Full, Cell.Full, Cell.Full, Cell.Cleared, Cell.Empty  };
+            int[] desc = new int[] { 3 };
             List<Cell[]> combis = Solver.GenerateCombinations(p, desc, 0, 0);
 
             string str = "";
-            
-            foreach (Cell[] combi in combis)
+
+            for (int i = 0; i < combis.Count; i++)
             {
-                str += $"Seq {string.Join("", combi.Select(s => { return s == Cell.Full ? "X" : "-";}))} ,";
+                str += $"Sequence {i}: {Solver.SequenceToString(combis[i])}";
             }
             
             Assert.Fail(str);
@@ -62,8 +62,8 @@ namespace NUnitTests
         [Test]
         public void Test_SolveSequence()
         {
-            Cell[] p = new Cell[] { Cell.Empty, Cell.Empty, Cell.Empty, Cell.Empty  };
-            int[] desc = new int[] { 2, 1 };
+            Cell[] p = new Cell[] { Cell.Full, Cell.Cleared, Cell.Cleared, Cell.Cleared, Cell.Empty, Cell.Empty  };
+            int[] desc = new int[] { 1 };
 
             Cell[] seq = Solver.SolveSequence(p, desc);
             Assert.Fail(Solver.SequenceToString(seq));

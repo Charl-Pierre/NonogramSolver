@@ -10,32 +10,42 @@ namespace Nonogram_Solver
     {
         private Board board;
         private int totalBlocks;
+        
+        public Point drawPos;
+        private bool enableStep;
+        private bool animate;
+        private int animationSpeed;
 
         public Board Board
         {
             get => board;
             set => board = value;
         }
+
         public Solver(Board board)
         {
-            this.board = board;
+            this.Board = board;
+            drawPos = new Point(
+                Board.RowDescriptors.Select(desc => desc.Length).Max()*2+1,
+                Board.ColumnDescriptors.Select(desc => desc.Length).Max());
+            
             int totalHorBlocks = 0;
             int totalVerBlocks = 0;
             
             //Calculate the total number of blocks according to the row descriptors
-            for (int i = 0; i < board.RowsDescriptor.Length; i++)
+            for (int i = 0; i < board.RowDescriptors.Length; i++)
             {
-                for (int j = 0; j < board.RowsDescriptor[i].Length; j++)
+                for (int j = 0; j < board.RowDescriptors[i].Length; j++)
                 {
-                    totalHorBlocks += board.RowsDescriptor[i][j];
+                    totalHorBlocks += board.RowDescriptors[i][j];
                 }
             }
             //Calculate the total number of blocks according to the column descriptors
-            for (int i = 0; i < board.ColumnsDescriptor.Length; i++)
+            for (int i = 0; i < board.ColumnDescriptors.Length; i++)
             {
-                for (int j = 0; j < board.ColumnsDescriptor[i].Length; j++)
+                for (int j = 0; j < board.ColumnDescriptors[i].Length; j++)
                 {
-                    totalVerBlocks += board.ColumnsDescriptor[i][j];
+                    totalVerBlocks += board.ColumnDescriptors[i][j];
                 }
             }
             
@@ -44,52 +54,80 @@ namespace Nonogram_Solver
             
             totalBlocks = totalHorBlocks;
         }
-
-        public void Solve()
+        
+        public void Solve(bool printDebug = false)
         {
-            //Loop through all the row descriptors and calculate the corresponding confidence
-            int[] rowConfidence = new int[Board.RowsDescriptor.Length];
-            for (int i = 0; i < Board.RowsDescriptor.Length; i++)
-                rowConfidence[i] = GetConfidence(Board.GetRow(i), Board.RowsDescriptor[i]);
-
-            //Loop through all the column descriptors and calculate the corresponding confidence
-            int[] columnConfidence = new int[Board.ColumnsDescriptor.Length];
-            for (int i = 0; i < Board.ColumnsDescriptor.Length; i++)
-                columnConfidence[i] = GetConfidence( Board.GetColumn(i), Board.ColumnsDescriptor[i]);
-
-            //Find the best row/column
-            int bestConfidenceIndex = 0;
-            bool bestConfidenceIsVertical = false;
-            if (rowConfidence.Max() >= columnConfidence.Max())
-            {
-                for (int i = 0; i < rowConfidence.Length; i++)
-                    if (rowConfidence[i] > rowConfidence[bestConfidenceIndex]) bestConfidenceIndex = i;
-            }
-            else
-            {
-                bestConfidenceIsVertical = true;
-                for (int i = 0; i < columnConfidence.Length; i++)
-                    if (columnConfidence[i] > columnConfidence[bestConfidenceIndex]) bestConfidenceIndex = i;
-            }
-
-            //Get the sequence of the best row/column
-            Cell[] sequence = bestConfidenceIsVertical
-                ? Board.GetColumn(bestConfidenceIndex)
-                : Board.GetRow(bestConfidenceIndex);
-
-            //Get the segment descriptor of the best row/column
-            int[] desc = bestConfidenceIsVertical
-                ? Board.ColumnsDescriptor[bestConfidenceIndex]
-                : Board.RowsDescriptor[bestConfidenceIndex];
-
-            //Solve the sequence
-            sequence = SolveSequence(sequence, desc);
+            Console.Clear();
             
-            if (!bestConfidenceIsVertical)
-                Board.SetRow(sequence, bestConfidenceIndex);
-            else
-                Board.SetColumn(sequence, bestConfidenceIndex);
+            //Whether a certain row is up to date or not.
+            bool[] checkedRows = new bool[Board.Height];
+            bool[] checkedColumns = new bool[Board.Width];
+            int outOfDateRows = Int32.MaxValue, outOfDateColumns = Int32.MaxValue;
+
+            for (int round = 0; outOfDateRows > 0 && outOfDateColumns > 0; round++)
+            {
+                //Update all rows
+                for (int i = 0; i < Board.Height; i++)
+                {
+                    //Only update rows that are not up to date.
+                    if (!checkedRows[i])
+                    {
+                        Cell[] row = Board.GetRow(i);
+                        int[] descriptor = Board.RowDescriptors[i];
+                    
+                        //Solve the sequence as best as possible.
+                        Cell[] newRow = SolveSequence(row, descriptor);
+
+                        //Check all affected columns
+                        for (int j = 0; j < newRow.Length; j++)
+                            //If a cell in the sequence has been changed, set its column to out of date.
+                            if (newRow[j] != row[j])
+                                checkedColumns[j] = false;
+                        
+                        //Apply the changes to the board and mark the row as updated.
+                        int affectedCells = Board.SetRow(newRow, i);
+                        checkedRows[i] = true;
+                    }
+                }
+                
+                Board.Draw(drawPos);
+                outOfDateColumns = checkedColumns.Count(val => !val);
+                
+                if (printDebug) Console.Write($"Round {round}: Checked rows. Out-of-date columns: {outOfDateColumns}");
+                Console.ReadLine();
+                
+                //Update all columns.
+                for (int i = 0; i < Board.Width; i++)
+                {
+                    //Only update columns that are not up to date.
+                    if (!checkedColumns[i])
+                    {
+                        Cell[] column = Board.GetColumn(i);
+                        int[] descriptor = Board.ColumnDescriptors[i];
+                    
+                        //Solve the sequence as best as possible.
+                        Cell[] newColumn = SolveSequence(column, descriptor);
+
+                        //Check all affected rows
+                        for (int j = 0; j < newColumn.Length; j++)
+                            //If a cell in the sequence has been changed, set its row to out of date.
+                            if (newColumn[j] != column[j])
+                                checkedRows[j] = false;
+                        
+                        //Apply the changes to the board and mark the column as updated.
+                        int affectedCells = Board.SetColumn(newColumn, i);
+                        checkedColumns[i] = true;
+                    }
+                }
+                
+                Board.Draw(drawPos);
+                outOfDateRows = checkedRows.Count(val => !val);
+                
+                if (printDebug) Console.Write($"Round {round}: Checked columns. Out-of-date rows: {outOfDateRows}");
+                Console.ReadLine();
+            }
             
+            Console.WriteLine("idk anymore");
         }
         
         /// <summary>
@@ -124,8 +162,12 @@ namespace Nonogram_Solver
         {
             List<Cell[]> possibleCombinations = GenerateCombinations(sequence, desc, 0, 0);
 
+            // for (int i = possibleCombinations.Count-1; i >= 0; i--)
+            //     if (GenerateCombinations(possibleCombinations[i], desc, 0, 0).Count < 1)
+            //         possibleCombinations.RemoveAt(i);
+            
             if (possibleCombinations.Count < 1)
-                return null;
+                return sequence;
 
             Cell[] result = new Cell[sequence.Length];
             
@@ -146,13 +188,24 @@ namespace Nonogram_Solver
         {
             //Determine whether cell can be determined by checking if it's always Full or always Cleared/Empty.
             Cell c = possibleCombinations[0][index];
-            for (int j = 1; j < possibleCombinations.Count; j++)
+            for (int i = 1; i < possibleCombinations.Count; i++)
             {
-                if (possibleCombinations[j][index] != c)
+                if (!CellsAreSimilar(c, possibleCombinations[i][index]))
                     return Cell.Empty;
             }
 
             return c == Cell.Full ? Cell.Full : Cell.Cleared;
+        }
+
+        private static bool CellsAreSimilar(Cell c1, Cell c2)
+        {
+            if (c1 == Cell.Full || c2 == Cell.Full)
+            {
+                if (c1 == c2)
+                    return true;
+                return false;
+            }
+            return true;
         }
 
         /// <summary>
@@ -177,6 +230,8 @@ namespace Nonogram_Solver
                 //Attempt to place block into input sequence
                 Cell[] newSequence = ApplyBlock(sequence, startIndex+i, desc[descriptorIndex]);
                 if (newSequence == null) continue;
+                
+                System.Diagnostics.Debug.WriteLine($"i = {i} in " + SequenceToString(newSequence));
 
                 //Check if this is the last descriptor in the list
                 if (descriptorIndex < desc.Length - 1)
@@ -193,6 +248,9 @@ namespace Nonogram_Solver
 
         public static Cell[] ApplyBlock(Cell[] sequence, int startIndex, int blockLength)
         {
+            if (startIndex > 0 && sequence[startIndex - 1] == Cell.Full)
+                return null;
+            
             Cell[] result = (sequence.Clone() as Cell[]);
             
             for (int i = 0; i < blockLength; i++)
@@ -201,17 +259,22 @@ namespace Nonogram_Solver
                 if (i + startIndex >= result.Length)
                     return null;
                 
-                if (result[i] == Cell.Cleared)
+                if (result[startIndex + i] == Cell.Cleared)
                     return null;
                 result[startIndex + i] = Cell.Full;
                 
             }
 
-            //Check that if the next cell is within bounds, that that cell is not full.
-            if (startIndex + blockLength + 1 < result.Length)
-                if (result[startIndex + blockLength + 1] == Cell.Full)
+            if (startIndex + blockLength < result.Length)
+            {
+                //Check that if the next cell is within bounds, that that cell is not full.
+                if (result[startIndex + blockLength] == Cell.Full)
                     return null;
 
+                //Set the cell behind the block to cleared.
+                result[startIndex + blockLength] = Cell.Cleared;
+            }
+            
             return result;
         }
 

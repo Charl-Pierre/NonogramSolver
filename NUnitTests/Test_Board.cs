@@ -19,8 +19,8 @@ namespace NUnitTests
             Board b = new Board(horizontalDesc, verticalDesc);
             
             Assert.IsNotNull(b.Grid);
-            Assert.IsNotNull(b.RowsDescriptor);
-            Assert.IsNotNull(b.ColumnsDescriptor);
+            Assert.IsNotNull(b.RowDescriptors);
+            Assert.IsNotNull(b.ColumnDescriptors);
             
             Assert.That(b.Width == verticalDesc.Count(c => c == ':')+1, $"Width mismatch, expected 3, was {b.Width}");
             Assert.That(b.Height == horizontalDesc.Count(c => c == ':')+1, $"Height mismatch, expected 4, was {b.Height}");
@@ -64,7 +64,9 @@ namespace NUnitTests
             Cell[] seq = new Cell[] { Cell.Full, Cell.Full, Cell.Cleared };
             
             Assert.That(b.SetColumn(seq, 1) == 3);
-            Assert.That(b.SetRow(seq, 1) == 3);
+
+            int affectedColumns = b.SetRow(seq, 1);
+            Assert.That(affectedColumns == 2, $"SetRow failure. Affected cells: {affectedColumns}");
 
             Assert.That(seq.SequenceEqual(b.GetRow(1)));
             Assert.That(seq.SequenceEqual(b.GetColumn(1)));

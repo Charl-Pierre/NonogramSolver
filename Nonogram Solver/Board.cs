@@ -9,8 +9,7 @@ namespace Nonogram_Solver
     {
         Empty, 
         Full, 
-        Cleared, 
-        Marked
+        Cleared,
     }
     public class Board
     {
@@ -28,7 +27,7 @@ namespace Nonogram_Solver
         /// <summary>
         /// An array of arrays containing all the integers describing the rows of the grid
         /// </summary>
-        public int[][] RowsDescriptor
+        public int[][] RowDescriptors
         {
             get => rowsDesc;
             set => rowsDesc = value;
@@ -37,7 +36,7 @@ namespace Nonogram_Solver
         /// <summary>
         /// An array of arrays containing all the integers describing the columns of the grid
         /// </summary>
-        public int[][] ColumnsDescriptor
+        public int[][] ColumnDescriptors
         {
             get => columnsDesc;
             set => columnsDesc = value;
@@ -88,13 +87,10 @@ namespace Nonogram_Solver
                     switch (value)
                     {
                         case Cell.Full:
-                            c = ConsoleColor.Green;
+                            c = ConsoleColor.White;
                             break;
                         case Cell.Cleared:
                             c = ConsoleColor.Gray;
-                            break;
-                        case Cell.Marked:
-                            c = ConsoleColor.Cyan;
                             break;
                     }
                     Util.WriteAt(value != Cell.Empty? "  ": "", point.Add(1+i*2, 1+j), ConsoleColor.Black, c);
@@ -123,6 +119,8 @@ namespace Nonogram_Solver
 
             return descriptor;
         }
+
+      
 
         
         /// <summary>
@@ -164,7 +162,7 @@ namespace Nonogram_Solver
             int cellsChanged = 0;
             for (int i = 0; i < Width; i++)
             {
-                if (sequence[i] != Cell.Empty)
+                if (sequence[i] != Cell.Empty && Grid[i, rowIndex] != sequence[i])
                 {
                     Grid[i, rowIndex] = sequence[i];
                     cellsChanged++;
@@ -184,7 +182,7 @@ namespace Nonogram_Solver
             int cellsChanged = 0;
             for (int i = 0; i < Height; i++)
             {
-                if (sequence[i] != Cell.Empty)
+                if (sequence[i] != Cell.Empty && Grid[columnIndex, i] != sequence[i])
                 {
                     Grid[columnIndex, i] = sequence[i];
                     cellsChanged++;
