@@ -152,6 +152,35 @@ namespace Nonogram_Solver
             return confidence;
         }
 
+        public static bool IsPossible(Cell[] sequence, int[] desc)
+        {
+            List<Cell[]> possibleDescriptorSequences = GenerateCombinations(new Cell[sequence.Length], desc, 0, 0);
+
+            for (int i = 0; i < possibleDescriptorSequences.Count; i++)
+            {
+                Cell[] testSequence = possibleDescriptorSequences[i];
+                if (CompareSequences(sequence, testSequence))
+                    return true;
+                
+            }
+
+            return false;
+        }
+
+        public static bool CompareSequences(Cell[] sequence, Cell[] testSequence)
+        {
+            for (int i = 0; i < testSequence.Length; i++)
+            {
+                if (testSequence[i] == Cell.Full)
+                {
+                    if (sequence[i] == Cell.Cleared) return false;
+                }
+                else
+                    if (sequence[i] == Cell.Full) return false;
+            }
+            return true;
+        }
+
         /// <summary>
         /// Solve a given sequence as best as possible with the given information.
         /// </summary>
@@ -162,10 +191,9 @@ namespace Nonogram_Solver
         {
             List<Cell[]> possibleCombinations = GenerateCombinations(sequence, desc, 0, 0);
 
-            // for (int i = possibleCombinations.Count-1; i >= 0; i--)
-            //     if (GenerateCombinations(possibleCombinations[i], desc, 0, 0).Count < 1)
-            //         possibleCombinations.RemoveAt(i);
-            
+            for (int i = possibleCombinations.Count-1; i >= 0; i--)
+                if (!IsPossible(possibleCombinations[i], desc)) possibleCombinations.RemoveAt(i);
+
             if (possibleCombinations.Count < 1)
                 return sequence;
 
@@ -231,8 +259,6 @@ namespace Nonogram_Solver
                 Cell[] newSequence = ApplyBlock(sequence, startIndex+i, desc[descriptorIndex]);
                 if (newSequence == null) continue;
                 
-                System.Diagnostics.Debug.WriteLine($"i = {i} in " + SequenceToString(newSequence));
-
                 //Check if this is the last descriptor in the list
                 if (descriptorIndex < desc.Length - 1)
                     //Generate all combinations with this sequence and add them to the list

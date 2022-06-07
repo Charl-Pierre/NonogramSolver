@@ -62,8 +62,8 @@ namespace NUnitTests
         [Test]
         public void Test_SolveSequence()
         {
-            Cell[] p = new Cell[] { Cell.Full, Cell.Cleared, Cell.Cleared, Cell.Cleared, Cell.Empty, Cell.Empty  };
-            int[] desc = new int[] { 1 };
+            Cell[] p = new Cell[] { Cell.Empty, Cell.Full, Cell.Empty, Cell.Full, Cell.Empty, Cell.Empty  };
+            int[] desc = new int[] { 3 };
 
             Cell[] seq = Solver.SolveSequence(p, desc);
             Assert.Fail(Solver.SequenceToString(seq));
