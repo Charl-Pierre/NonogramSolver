@@ -12,9 +12,7 @@ namespace Nonogram_Solver
         private int totalBlocks;
         
         public Point drawPos;
-        private bool enableStep;
-        private bool animate;
-        private int animationSpeed;
+
 
         public Board Board
         {
@@ -55,16 +53,22 @@ namespace Nonogram_Solver
             totalBlocks = totalHorBlocks;
         }
         
+        //TODO
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="printDebug"></param>
         public void Solve(bool printDebug = false)
         {
             Console.Clear();
+            Board.Draw(drawPos);
             
             //Whether a certain row is up to date or not.
             bool[] checkedRows = new bool[Board.Height];
             bool[] checkedColumns = new bool[Board.Width];
             int outOfDateRows = Int32.MaxValue, outOfDateColumns = Int32.MaxValue;
-
-            for (int round = 0; outOfDateRows > 0 && outOfDateColumns > 0; round++)
+            int round = 0;
+            for (; outOfDateRows > 0 && outOfDateColumns > 0; round++)
             {
                 //Update all rows
                 for (int i = 0; i < Board.Height; i++)
@@ -77,7 +81,7 @@ namespace Nonogram_Solver
                     
                         //Solve the sequence as best as possible.
                         Cell[] newRow = SolveSequence(row, descriptor);
-
+                
                         //Check all affected columns
                         for (int j = 0; j < newRow.Length; j++)
                             //If a cell in the sequence has been changed, set its column to out of date.
@@ -87,14 +91,18 @@ namespace Nonogram_Solver
                         //Apply the changes to the board and mark the row as updated.
                         int affectedCells = Board.SetRow(newRow, i);
                         checkedRows[i] = true;
+                        
+                        //Redraw more often at start
+                        if (outOfDateRows > Board.Height*0.75 && affectedCells != 0)
+                            Board.Draw(drawPos);
                     }
                 }
                 
                 Board.Draw(drawPos);
                 outOfDateColumns = checkedColumns.Count(val => !val);
                 
-                if (printDebug) Console.Write($"Round {round}: Checked rows. Out-of-date columns: {outOfDateColumns}");
-                Console.ReadLine();
+                if (printDebug) Console.Write($"Rnd {round+1}A: OoD columns: {outOfDateColumns}");
+                //Console.ReadLine();
                 
                 //Update all columns.
                 for (int i = 0; i < Board.Width; i++)
@@ -117,17 +125,21 @@ namespace Nonogram_Solver
                         //Apply the changes to the board and mark the column as updated.
                         int affectedCells = Board.SetColumn(newColumn, i);
                         checkedColumns[i] = true;
+                        
+                        //Redraw more often at start
+                        if (outOfDateColumns > Board.Height*0.75 && affectedCells != 0)
+                            Board.Draw(drawPos);
                     }
                 }
                 
                 Board.Draw(drawPos);
                 outOfDateRows = checkedRows.Count(val => !val);
                 
-                if (printDebug) Console.Write($"Round {round}: Checked columns. Out-of-date rows: {outOfDateRows}");
-                Console.ReadLine();
+                if (printDebug) Console.Write($"Rnd {round+1}B: OoD rows: {outOfDateRows}");
+                //Console.ReadLine();
             }
             
-            Console.WriteLine("idk anymore");
+            Console.WriteLine($"Finished in {round} rounds.");
         }
         
         /// <summary>
@@ -152,7 +164,13 @@ namespace Nonogram_Solver
             return confidence;
         }
 
-        public static bool IsPossible(Cell[] sequence, int[] desc)
+        /// <summary>
+        /// Determines whether a sequence is solvable.
+        /// </summary>
+        /// <param name="sequence">The sequence to be checked.</param>
+        /// <param name="desc">The descriptor list of the specified sequence.</param>
+        /// <returns>A boolean indicating whether a sequence could possibly be the correct solution.</returns>
+        public static bool IsSolvable(Cell[] sequence, int[] desc)
         {
             List<Cell[]> possibleDescriptorSequences = GenerateCombinations(new Cell[sequence.Length], desc, 0, 0);
 
@@ -166,7 +184,13 @@ namespace Nonogram_Solver
 
             return false;
         }
-
+        
+        /// <summary>
+        /// Helper function for IsSolvable. Used to compare each cell of 2 sequences.
+        /// </summary>
+        /// <param name="sequence">The sequence to check for validity.</param>
+        /// <param name="testSequence">The sequence to be compared against.</param>
+        /// <returns>A boolean indicating whether two sequences are similar enough to consider valid.</returns>
         public static bool CompareSequences(Cell[] sequence, Cell[] testSequence)
         {
             for (int i = 0; i < testSequence.Length; i++)
@@ -181,6 +205,20 @@ namespace Nonogram_Solver
             return true;
         }
 
+        //TODO: optimisation idea 1
+        //for(i=(0..desc[0]-1)
+        //if (seq[i] == full
+        //seq[i+1] = full;
+        //en andersom, van de achterste geld dit ook.
+        //(als dit niet werkt, blame Roan.)
+        
+        //TODO: optimisation idea 2
+        //check whether a sequence is correct before trying to 're-solve' it.
+        
+        //TODO: optimisation idea 3
+        //Start searching with a increased startIndex if the leading cells are cleared.
+        //Doesn't give major speed up but skips unnecessary preliminary calculations.
+        
         /// <summary>
         /// Solve a given sequence as best as possible with the given information.
         /// </summary>
@@ -189,10 +227,12 @@ namespace Nonogram_Solver
         /// <returns>The specified sequence with all solvable cells filled in.</returns>
         public static Cell[] SolveSequence(Cell[] sequence, int[] desc, bool printDebug = false)
         {
+
             List<Cell[]> possibleCombinations = GenerateCombinations(sequence, desc, 0, 0);
 
-            for (int i = possibleCombinations.Count-1; i >= 0; i--)
-                if (!IsPossible(possibleCombinations[i], desc)) possibleCombinations.RemoveAt(i);
+            if (possibleCombinations.Count > 1)
+                for (int i = possibleCombinations.Count-1; i >= 0; i--)
+                    if (!IsSolvable(possibleCombinations[i], desc)) possibleCombinations.RemoveAt(i);
 
             if (possibleCombinations.Count < 1)
                 return sequence;
@@ -224,7 +264,18 @@ namespace Nonogram_Solver
 
             return c == Cell.Full ? Cell.Full : Cell.Cleared;
         }
-
+        
+        /// <summary>
+        /// Determine whether two cells are similar
+        /// Pairs considered similar are:
+        /// 1. Full & Full
+        /// 2. Empty & Clear
+        /// 3. Clear & Clear
+        /// 4. Empty & Empty
+        /// </summary>
+        /// <param name="c1">Cell 1 to be checked.</param>
+        /// <param name="c2">Cell 1 to be checked.</param>
+        /// <returns>Whether the two cells are considered similar.</returns>
         private static bool CellsAreSimilar(Cell c1, Cell c2)
         {
             if (c1 == Cell.Full || c2 == Cell.Full)
@@ -249,8 +300,13 @@ namespace Nonogram_Solver
             List<Cell[]> partialCombinations = new List<Cell[]>();
             
             //The minimum remaining length from the current descriptorIndex. (Ex. 3,1,2 gives index(0) = 8, index(1) = 4 and index(2) = 2.
-            int minimumLength = desc.Skip(descriptorIndex).Sum() + desc.Length-1-descriptorIndex;
+            int minimumLength = desc.Length-1-descriptorIndex;
+            for (int i = descriptorIndex; i < desc.Length; i++)
+                minimumLength += desc[i];
             
+            //Old formula, slower formula.
+            //int minimumLength = desc.Skip(descriptorIndex).Sum() + desc.Length-1-descriptorIndex;
+
             //Loop through all possible starting combinations for the current descriptor
             for (int i = 0; startIndex + i + minimumLength - 1 < sequence.Length; i++)
             {
@@ -272,6 +328,14 @@ namespace Nonogram_Solver
             return partialCombinations;
         }
 
+        /// <summary>
+        /// Tries to place a block (a group of adjacent cells) within a given sequence.
+        /// Method returns Null if for whatever reason, it fails.
+        /// </summary>
+        /// <param name="sequence">The sequence to be edited.</param>
+        /// <param name="startIndex">The starting index of the block</param>
+        /// <param name="blockLength">The length of the block</param>
+        /// <returns>Returns the given sequence with a block placed at the specified position.</returns>
         public static Cell[] ApplyBlock(Cell[] sequence, int startIndex, int blockLength)
         {
             if (startIndex > 0 && sequence[startIndex - 1] == Cell.Full)

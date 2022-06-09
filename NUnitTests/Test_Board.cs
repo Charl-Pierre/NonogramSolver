@@ -79,7 +79,13 @@ namespace NUnitTests
         [Test]
         public void Test_GetDescriptor()
         {
-            throw new NotImplementedException();
+            Board b = new Board("1,2:3,4", "5,6:7,8");
+            Assert.That(b.RowDescriptors[0].SequenceEqual(new []{1, 2}));
+            Assert.That(b.RowDescriptors[1].SequenceEqual(new []{3, 4}));
+            
+            Assert.That(b.ColumnDescriptors[0].SequenceEqual(new []{5, 6}));
+            Assert.That(b.ColumnDescriptors[1].SequenceEqual(new []{7, 8}));
+            
         }
         
     }

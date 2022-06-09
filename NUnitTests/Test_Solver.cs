@@ -20,6 +20,12 @@ namespace NUnitTests
             int descriptorIndex = 1;
             int minimumLength = desc.Skip(descriptorIndex).Sum() + desc.Length-1-descriptorIndex;
             Assert.That(minimumLength == 4);
+
+            int altMinimumLength = desc.Length-1-descriptorIndex;
+            for (int i = descriptorIndex; i < desc.Length; i++)
+                altMinimumLength += desc[i];
+            
+            Assert.That(altMinimumLength == 4);
             
             //Test Cloning of sequence
             Cell[] seq = new Cell[] { Cell.Full, Cell.Full, Cell.Empty };

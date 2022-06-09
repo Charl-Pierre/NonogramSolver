@@ -42,47 +42,93 @@ namespace Nonogram_Solver
             set => columnsDesc = value;
         }
         
+        /// <summary>
+        /// Create an unsolved Nonogram.
+        /// Both Descriptions take a string of similar format, namely
+        /// a string numbers delimited with commas (,) and colons (:)
+        /// containing a horizontal/vertical description of a grid. Ex. "1,2,3:4,5,6".
+        /// </summary>
+        /// <param name="horizontalDescription">A string containing a list of integers referring to the descriptors seen on the left of a Nonogram puzzle.</param>
+        /// <param name="verticalDescription">A string containing a list of integers referring to the descriptors seen at the top of a Nonogram puzzle.</param>
         public Board(string horizontalDescription, string verticalDescription)
         {
             rowsDesc = GetDescriptor(horizontalDescription);
             columnsDesc = GetDescriptor(verticalDescription);
             Grid = new Cell[columnsDesc.Length, rowsDesc.Length];
         }
+        
+        /// <summary>
+        /// Create an unsolved Nonogram.
+        /// Takes a tuple of 2 descriptor strings referring to the rows and columns respectively.
+        /// </summary>
+        /// <param name="descriptors">A tuple of 2 strings, both containing a list of integers referring to the descriptors seen on the left/top of a Nonogram puzzle respectively.</param>
+        public Board((string, string) descriptors)
+        {
+            rowsDesc = GetDescriptor(descriptors.Item1);
+            columnsDesc = GetDescriptor(descriptors.Item2);
+            Grid = new Cell[columnsDesc.Length, rowsDesc.Length];
+        }
 
         public int Width => Grid.GetLength(0);
         public int Height => Grid.GetLength(1);
-
         
+        /// <summary>
+        /// Draws the board at a specified position.
+        /// </summary>
+        /// <param name="point">The position that the board should be drawn at. Refers to the top-left corner of the board (excluding descriptors).</param>
+        /// <param name="showDescriptors">Whether the descriptors should be draw on the left/top of the board.</param>
         public void Draw(Point point, bool showDescriptors = true)
         {
+            //Draw a rectangle around the board.
             Util.Rectangle(point, new Point(Width*2+2, Height+2));
+            
+            //Draw the row/column descriptors if enabled.
             if (showDescriptors)
             {
+                //Loop through all the row descriptors.
                 for (int i = 0; i < rowsDesc.Length; i++)
                 {
+                    //For each descriptor, draw its values backwards, with the last value being draw closest to the board.
                     for (int j = 0; j < rowsDesc[i].Length; j++)
                     {
+                        //Get value from descriptor
                         int value = rowsDesc[i][rowsDesc[i].Length - j - 1];
+                        
+                        //Determine background color to create a checkerboard pattern.
                         ConsoleColor bgColor = ((i+j) % 2 == 0) ? ConsoleColor.Gray : ConsoleColor.DarkGray;
+                        
+                        //Draw the value in a 2x1 space (Due to the 1:2 ratio of console text). This leaves space for a possible 2nd digit.
                         Util.WriteAt(value.ToString().PadRight(2), point.Add(-2*(j+1), i+1), ConsoleColor.Black, bgColor);
                     }
                 }
+                
+                //Loop through all the column descriptors.
                 for (int i = 0; i < columnsDesc.Length; i++)
                 {
+                    //For each descriptor, draw its values backwards, with the last value being draw closest to the board.
                     for (int j = 0; j < columnsDesc[i].Length; j++)
                     {
+                        //Get value from descriptor
                         int value = columnsDesc[i][columnsDesc[i].Length - j - 1];
+                        
+                        //Determine background color to create a checkerboard pattern.
                         ConsoleColor bgColor = ((i+j) % 2 == 0) ? ConsoleColor.Gray : ConsoleColor.DarkGray;
+                        
+                        //Draw the value in a 2x1 space (Due to the 1:2 ratio of console text). This leaves space for a possible 2nd digit.
                         Util.WriteAt(value.ToString().PadRight(2), point.Add(i*2+1, -1*(j+1)), ConsoleColor.Black, bgColor);
                     }
                 }
             }
 
+            //Loop through all the cells within the board.
             for (int i = 0; i < Width; i++)
             {
                 for (int j = 0; j < Height; j++)
                 {
+                    //Get the value from a cell.
                     Cell value = grid[i, j];
+                    
+                    //Determine the color of the cell based on its contents.
                     ConsoleColor c = ConsoleColor.Black;
                     switch (value)
                     {
@@ -93,6 +139,8 @@ namespace Nonogram_Solver
                             c = ConsoleColor.Gray;
                             break;
                     }
+                    
+                    //Draw the cell in the console.
                     Util.WriteAt(value != Cell.Empty? "  ": "", point.Add(1+i*2, 1+j), ConsoleColor.Black, c);
                 }
             }
@@ -120,9 +168,6 @@ namespace Nonogram_Solver
             return descriptor;
         }
 
-      
-
-        
         /// <summary>
         /// Deep-copy a specific row as a 1-dimensional sequence of cells
         /// </summary>

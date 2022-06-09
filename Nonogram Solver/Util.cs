@@ -5,6 +5,7 @@ using System.Drawing;
 
 static class Util
 {
+    //TODO: Write documentation for the whole class.
     public static void WriteAt(char letter, Point point, ConsoleColor color = ConsoleColor.White, ConsoleColor bgColor = ConsoleColor.Black)
     {
         Util.WriteAt(letter.ToString(), point, color, bgColor);
