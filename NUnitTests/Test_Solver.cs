@@ -14,21 +14,21 @@ namespace NUnitTests
         [Test]
         public void Test_Formulas()
         {
-            
             //Test minimum length formula
             desc = new int[] { 3,1,2};
             int descriptorIndex = 1;
-            int minimumLength = desc.Skip(descriptorIndex).Sum() + desc.Length-1-descriptorIndex;
-            Assert.That(minimumLength == 4);
-
-            int altMinimumLength = desc.Length-1-descriptorIndex;
+            int minimumLength = desc.Length-1-descriptorIndex;
             for (int i = descriptorIndex; i < desc.Length; i++)
-                altMinimumLength += desc[i];
+                minimumLength += desc[i];
             
+            Assert.That(minimumLength == 4);
+            
+            //Test old minimum length formula
+            int altMinimumLength = desc.Skip(descriptorIndex).Sum() + desc.Length-1-descriptorIndex;
             Assert.That(altMinimumLength == 4);
             
             //Test Cloning of sequence
-            Cell[] seq = new Cell[] { Cell.Full, Cell.Full, Cell.Empty };
+            Cell[] seq = { Cell.Full, Cell.Full, Cell.Empty };
             Cell[] seq2 = seq.Clone() as Cell[];
             seq2[0] = Cell.Empty;
             Assert.That(seq[0] == Cell.Full);
@@ -37,6 +37,12 @@ namespace NUnitTests
             Cell[] seq3 = seq;
             seq3[0] = Cell.Cleared;
             Assert.That(seq[0] == Cell.Cleared);
+        }
+
+        [Test]
+        public void Test_SequenceToString()
+        {
+            //TODO
         }
 
         [Test]

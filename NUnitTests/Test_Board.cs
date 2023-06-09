@@ -61,7 +61,7 @@ namespace NUnitTests
             
             Assert.That(b.GetRow(1).Count(c => c == Cell.Empty) == 3);
 
-            Cell[] seq = new Cell[] { Cell.Full, Cell.Full, Cell.Cleared };
+            Cell[] seq = { Cell.Full, Cell.Full, Cell.Cleared };
             
             Assert.That(b.SetColumn(seq, 1) == 3);
 

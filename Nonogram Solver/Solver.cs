@@ -23,10 +23,14 @@ namespace Nonogram_Solver
         public Solver(Board board)
         {
             this.Board = board;
+            
+            //Calculate minimum draw position
             drawPos = new Point(
                 Board.RowDescriptors.Select(desc => desc.Length).Max()*2+1,
                 Board.ColumnDescriptors.Select(desc => desc.Length).Max());
-            
+
+            Console.SetWindowSize(drawPos.X + 2*board.Width + 10, drawPos.Y + board.Height + 5);
+
             int totalHorBlocks = 0;
             int totalVerBlocks = 0;
             
@@ -53,12 +57,15 @@ namespace Nonogram_Solver
             totalBlocks = totalHorBlocks;
         }
         
-        //TODO
+        //TODO: add debug messages.
         /// <summary>
-        /// 
+        /// Solves the given puzzle and returns the number of rounds it took.
+        /// Solution works by recursively generating all possible combinations for each row/column and removing any that contain discrepancies.
+        /// Rounds becomes significantly faster over the course of the process as the amount of possible combinations decreases.
         /// </summary>
-        /// <param name="printDebug"></param>
-        public void Solve(bool printDebug = false)
+        /// <param name="printDebug">Whether to print various metadata during the process</param>
+        /// <returns>The number of rounds used to solve the puzzle.</returns>
+        public int Solve(bool printDebug = false)
         {
             Console.Clear();
             Board.Draw(drawPos);
@@ -77,6 +84,7 @@ namespace Nonogram_Solver
                     if (!checkedRows[i])
                     {
                         Cell[] row = Board.GetRow(i);
+                        Cell[] backupRow = Board.GetRow(i);
                         int[] descriptor = Board.RowDescriptors[i];
                     
                         //Solve the sequence as best as possible.
@@ -85,7 +93,7 @@ namespace Nonogram_Solver
                         //Check all affected columns
                         for (int j = 0; j < newRow.Length; j++)
                             //If a cell in the sequence has been changed, set its column to out of date.
-                            if (newRow[j] != row[j])
+                            if (newRow[j] != backupRow[j])
                                 checkedColumns[j] = false;
                         
                         //Apply the changes to the board and mark the row as updated.
@@ -102,8 +110,7 @@ namespace Nonogram_Solver
                 outOfDateColumns = checkedColumns.Count(val => !val);
                 
                 if (printDebug) Console.Write($"Rnd {round+1}A: OoD columns: {outOfDateColumns}");
-                //Console.ReadLine();
-                
+
                 //Update all columns.
                 for (int i = 0; i < Board.Width; i++)
                 {
@@ -111,6 +118,7 @@ namespace Nonogram_Solver
                     if (!checkedColumns[i])
                     {
                         Cell[] column = Board.GetColumn(i);
+                        Cell[] backupColumn = Board.GetColumn(i);
                         int[] descriptor = Board.ColumnDescriptors[i];
                     
                         //Solve the sequence as best as possible.
@@ -119,7 +127,7 @@ namespace Nonogram_Solver
                         //Check all affected rows
                         for (int j = 0; j < newColumn.Length; j++)
                             //If a cell in the sequence has been changed, set its row to out of date.
-                            if (newColumn[j] != column[j])
+                            if (newColumn[j] != backupColumn[j])
                                 checkedRows[j] = false;
                         
                         //Apply the changes to the board and mark the column as updated.
@@ -136,13 +144,14 @@ namespace Nonogram_Solver
                 outOfDateRows = checkedRows.Count(val => !val);
                 
                 if (printDebug) Console.Write($"Rnd {round+1}B: OoD rows: {outOfDateRows}");
-                //Console.ReadLine();
             }
             
             Console.WriteLine($"Finished in {round} rounds.");
+            return round;
         }
         
         /// <summary>
+        /// [DEPRECATED]
         /// Calculates the confidence of a sequence, given its descriptor.
         /// </summary>
         /// <param name="sequence">The sequence to be evaluated</param>
@@ -170,18 +179,16 @@ namespace Nonogram_Solver
         /// <param name="sequence">The sequence to be checked.</param>
         /// <param name="desc">The descriptor list of the specified sequence.</param>
         /// <returns>A boolean indicating whether a sequence could possibly be the correct solution.</returns>
-        public static bool IsSolvable(Cell[] sequence, int[] desc)
+        public static bool IsSolvable(Cell[] sequence, int[] desc, int startIndex)
         {
-            List<Cell[]> possibleDescriptorSequences = GenerateCombinations(new Cell[sequence.Length], desc, 0, 0);
+            List<Cell[]> possibleDescriptorSequences = GenerateCombinations(new Cell[sequence.Length], desc, 0, startIndex);
 
             for (int i = 0; i < possibleDescriptorSequences.Count; i++)
             {
                 Cell[] testSequence = possibleDescriptorSequences[i];
                 if (CompareSequences(sequence, testSequence))
                     return true;
-                
             }
-
             return false;
         }
         
@@ -205,20 +212,6 @@ namespace Nonogram_Solver
             return true;
         }
 
-        //TODO: optimisation idea 1
-        //for(i=(0..desc[0]-1)
-        //if (seq[i] == full
-        //seq[i+1] = full;
-        //en andersom, van de achterste geld dit ook.
-        //(als dit niet werkt, blame Roan.)
-        
-        //TODO: optimisation idea 2
-        //check whether a sequence is correct before trying to 're-solve' it.
-        
-        //TODO: optimisation idea 3
-        //Start searching with a increased startIndex if the leading cells are cleared.
-        //Doesn't give major speed up but skips unnecessary preliminary calculations.
-        
         /// <summary>
         /// Solve a given sequence as best as possible with the given information.
         /// </summary>
@@ -227,20 +220,40 @@ namespace Nonogram_Solver
         /// <returns>The specified sequence with all solvable cells filled in.</returns>
         public static Cell[] SolveSequence(Cell[] sequence, int[] desc, bool printDebug = false)
         {
+            //Perform preliminary checks.
+            int firstNonClear = sequence.Length-1;
+            int emptyCells = 0;
 
-            List<Cell[]> possibleCombinations = GenerateCombinations(sequence, desc, 0, 0);
+            //Find the first non-clear cell and count the number of empty cells
+            for (int i = 0; i < sequence.Length; i++)
+            {
+                if (sequence[i] != Cell.Cleared) firstNonClear = Math.Min(firstNonClear, i);
+                if (sequence[i] == Cell.Empty) emptyCells++;
+            }
 
+            //If there are no empty cells, the sequence is solved.
+            if (emptyCells == 0) return sequence;
+
+            //Generate all possible combinations, using the first non-clear cell as starting index.
+            List<Cell[]> possibleCombinations = GenerateCombinations(sequence, desc, 0, firstNonClear);
+
+            //If there is more than one possibility, rule out discrepant ones
             if (possibleCombinations.Count > 1)
+                //Loop through the list backwards
                 for (int i = possibleCombinations.Count-1; i >= 0; i--)
-                    if (!IsSolvable(possibleCombinations[i], desc)) possibleCombinations.RemoveAt(i);
+                    //If a combination can't be solved anymore, remove it from the list of combinations.
+                    if (!IsSolvable(possibleCombinations[i], desc, firstNonClear)) possibleCombinations.RemoveAt(i);
 
+            //If the number of combinations is 0, then sequence can't be solved yet.
             if (possibleCombinations.Count < 1)
                 return sequence;
 
+            //Create the result sequence.
             Cell[] result = new Cell[sequence.Length];
             
             //Loop through each cell in the sequence
             for (int i = 0; i < sequence.Length; i++)
+                //Determine what the cell should be based on the possible combinations.
                 result[i] = CheckConsensus(possibleCombinations, i);
             
             return result;
